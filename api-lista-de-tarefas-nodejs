@@ -1,0 +1,77 @@
+// Descrição: Crie uma API para gerenciar uma lista de tarefas, onde cada tarefa tem id, titulo, descricao, e status (pendente ou concluída).
+// Operações CRUD:
+// POST /tarefas: Adiciona uma nova tarefa.
+// GET /tarefas: Retorna a lista de todas as tarefas.
+// PUT /tarefas/:id: Atualiza o título, descrição ou status de uma tarefa existente.
+// DELETE /tarefas/:id: Remove uma tarefa pelo ID.
+// Desafio Extra: Adicione um filtro para retornar somente tarefas que não foram concluídas ainda usando query params, como GET /tarefas?finalizada=false.
+
+// Importando a biblioteca necessária
+const express = require("express");
+
+const app = express();
+const PORT = 3001;
+
+app.use(express.json());
+
+let tarefas = [
+    { id: 1, titulo: "Estudar Angular", descricao: "Aprofundar nos conceitos", finalizada: false },
+    { id: 2, titulo: "Estudar Typescript", descricao: "Aprender tipos e interfaces", finalizada: true }
+];
+
+// Função para gerar um novo ID
+function gerarId(lista) {
+    let ultima_posicao = lista.length;
+    let ultimo_id = lista[ultima_posicao - 1]?.id || 0;
+    return ultimo_id + 1;
+}
+
+// GET /tarefas - Retorna todas as tarefas ou aplica filtro de finalizadas
+app.get('/tarefas', (req, res) => {
+    const { finalizada } = req.query;
+    let resultado = tarefas;
+
+    if (finalizada === 'false') {
+        resultado = tarefas.filter(tarefa => !tarefa.finalizada);
+    }
+    
+    res.json(resultado);
+});
+
+// POST /tarefas - Adiciona uma nova tarefa
+app.post('/tarefas', (req, res) => {
+    const nova_tarefa = {
+        id: gerarId(tarefas),
+        titulo: req.body.titulo,
+        descricao: req.body.descricao,
+        finalizada: req.body.finalizada || false
+    };
+    tarefas.push(nova_tarefa);
+    res.status(201).json(nova_tarefa);
+});
+
+// PUT /tarefas/:id - Atualiza uma tarefa existente
+app.put("/tarefas/:id", (req, res) => {
+    const tarefa = tarefas.find(u => u.id === parseInt(req.params.id));
+    if (!tarefa) return res.status(404).send('Tarefa não encontrada');
+
+    tarefa.titulo = req.body.titulo || tarefa.titulo;
+    tarefa.descricao = req.body.descricao || tarefa.descricao;
+    tarefa.finalizada = req.body.finalizada ?? tarefa.finalizada;
+
+    res.json(tarefa);
+});
+
+// DELETE /tarefas/:id - Remove uma tarefa pelo ID
+app.delete('/tarefas/:id', (req, res) => {
+    const tarefaIndex = tarefas.findIndex(u => u.id === parseInt(req.params.id));
+    if (tarefaIndex === -1) return res.status(404).send('Tarefa não encontrada');
+
+    const [tarefaRemovida] = tarefas.splice(tarefaIndex, 1);
+    res.json({ mensagem: "Tarefa removida com sucesso", tarefa: tarefaRemovida });
+});
+
+// Iniciando o servidor
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta http://localhost:${PORT}`);
+});
